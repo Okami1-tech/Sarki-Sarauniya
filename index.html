@@ -39,6 +39,81 @@
             margin-bottom: 20px;
         }
 
+        /* INSTALL BANNER */
+        .install-banner {
+            background: rgba(138, 43, 226, 0.2);
+            border: 1px solid #8A2BE2;
+            border-radius: 16px;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+            animation: slideDown 0.5s ease;
+        }
+
+        .install-banner.hidden {
+            display: none;
+        }
+
+        .install-info {
+            flex: 1;
+        }
+
+        .install-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #ffffff;
+            margin-bottom: 3px;
+        }
+
+        .install-desc {
+            font-size: 0.75rem;
+            opacity: 0.7;
+        }
+
+        .install-btn {
+            background: #8A2BE2;
+            color: #ffffff;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+            white-space: nowrap;
+            transition: all 0.3s;
+        }
+
+        .install-btn:hover {
+            background: #7B1FA2;
+        }
+
+        .dismiss-btn {
+            background: transparent;
+            border: none;
+            color: rgba(255, 255, 255, 0.5);
+            cursor: pointer;
+            font-size: 1.2rem;
+            padding: 5px;
+        }
+
+        .dismiss-btn:hover {
+            color: #ffffff;
+        }
+
+        @keyframes slideDown {
+            from {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
         .logo-container {
             text-align: center;
             margin-bottom: 20px;
@@ -235,6 +310,16 @@
 </head>
 <body>
     <div class="app">
+        <!-- INSTALL BANNER -->
+        <div class="install-banner hidden" id="installBanner">
+            <div class="install-info">
+                <p class="install-title">📱 Install Deen Together</p>
+                <p class="install-desc">Add to your home screen for quick access</p>
+            </div>
+            <button class="install-btn" id="installBtn" onclick="installApp()">Install</button>
+            <button class="dismiss-btn" onclick="dismissInstall()">✕</button>
+        </div>
+
         <!-- LOGIN SECTION -->
         <div class="glass" id="loginSection">
             <div class="logo-container">
@@ -290,6 +375,44 @@
         const SUPABASE_URL = 'https://qnxbhrzpaimpwgheiibu.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFueGJocnpwYWltcHdnaGVpaWJ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgxMjAxMzgsImV4cCI6MjEwMzY5NjEzOH0.2kcocQ0VD3OZpdkDn4tXL7uF0vyrqpqKIOe5mGtXcDE';
 
+        // ============ INSTALL BANNER LOGIC ============
+        let deferredPrompt = null;
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('installBanner').classList.remove('hidden');
+        });
+
+        function installApp() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        console.log('User accepted install');
+                    }
+                    deferredPrompt = null;
+                    document.getElementById('installBanner').classList.add('hidden');
+                });
+            }
+        }
+
+        function dismissInstall() {
+            document.getElementById('installBanner').classList.add('hidden');
+            localStorage.setItem('install_dismissed', 'true');
+        }
+
+        // Check if already dismissed
+        if (localStorage.getItem('install_dismissed') === 'true') {
+            document.getElementById('installBanner').classList.add('hidden');
+        }
+
+        // Check if already installed (standalone mode)
+        if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true) {
+            document.getElementById('installBanner').classList.add('hidden');
+        }
+
+        // ============ LOGIN LOGIC ============
         function login() {
             const token = document.getElementById('tokenInput').value.trim();
             const errorMsg = document.getElementById('errorMsg');
@@ -333,7 +456,7 @@
             const today = new Date().toISOString().split('T')[0];
             
             try {
-                // Get today's lesson (first incomplete lesson)
+                // Get all lessons
                 const lessonsRes = await fetch(`${SUPABASE_URL}/rest/v1/lessons?select=*&order=lesson_number.asc`, {
                     headers: {
                         'apikey': SUPABASE_ANON_KEY,
@@ -343,30 +466,42 @@
                 const lessons = await lessonsRes.json();
                 
                 if (lessons && lessons.length > 0) {
-                    document.getElementById('todayLessonTitle').textContent = 
-                        `Part ${lessons[0].part_number} — Lesson ${lessons[0].lesson_number}: ${lessons[0].title}`;
+                    // Find first incomplete lesson
+                    const userId = await getUserId();
+                    const progressRes = await fetch(
+                        `${SUPABASE_URL}/rest/v1/progress?user_id=eq.${userId}&completed=eq.true`,
+                        {
+                            headers: {
+                                'apikey': SUPABASE_ANON_KEY,
+                                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                            }
+                        }
+                    );
+                    const progress = await progressRes.json();
+                    const completedIds = progress.map(p => p.lesson_id);
                     
-                    localStorage.setItem('today_lesson_id', lessons[0].id);
+                    const nextLesson = lessons.find(l => !completedIds.includes(l.id)) || lessons[0];
+                    
+                    document.getElementById('todayLessonTitle').textContent = 
+                        `Part ${nextLesson.part_number} — Lesson ${nextLesson.lesson_number}: ${nextLesson.title}`;
+                    
+                    localStorage.setItem('today_lesson_id', nextLesson.id);
+                    
+                    // Get completed count
+                    document.getElementById('completedCount').textContent = progress.length || 0;
                 }
                 
-                // Get completed count
-                const userId = await getUserId();
-                const progressRes = await fetch(`${SUPABASE_URL}/rest/v1/progress?user_id=eq.${userId}&completed=eq.true`, {
-                    headers: {
-                        'apikey': SUPABASE_ANON_KEY,
-                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
-                    }
-                });
-                const progress = await progressRes.json();
-                document.getElementById('completedCount').textContent = progress.length || 0;
-                
                 // Get streak
-                const checkinsRes = await fetch(`${SUPABASE_URL}/rest/v1/checkins?user_id=eq.${userId}&select=check_in_date&order=check_in_date.desc`, {
-                    headers: {
-                        'apikey': SUPABASE_ANON_KEY,
-                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                const userId = await getUserId();
+                const checkinsRes = await fetch(
+                    `${SUPABASE_URL}/rest/v1/checkins?user_id=eq.${userId}&select=check_in_date&order=check_in_date.desc`,
+                    {
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                        }
                     }
-                });
+                );
                 const checkins = await checkinsRes.json();
                 document.getElementById('streakCount').textContent = calculateStreak(checkins);
                 
@@ -424,6 +559,15 @@
         // Auto-login
         if (localStorage.getItem('deen_token')) {
             showDashboard();
+        }
+
+        // Register service worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(() => console.log('Service Worker registered'))
+                    .catch((err) => console.log('Service Worker registration failed:', err));
+            });
         }
     </script>
 </body>
