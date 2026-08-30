@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Progress — Deen Together</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="love.png" type="image/png">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: #050505;
+            color: #ffffff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .app {
+            max-width: 480px;
+            margin: 0 auto;
+        }
+
+        .glass {
+            background: rgba(138, 43, 226, 0.08);
+            border: 1px solid rgba(138, 43, 226, 0.25);
+            border-radius: 24px;
+            padding: 25px;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            margin-bottom: 20px;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .back-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: #ffffff;
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: all 0.3s;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        h1 {
+            font-size: 1.4rem;
+            color: #8A2BE2;
+            text-align: center;
+        }
+
+        .subtitle {
+            text-align: center;
+            font-size: 0.85rem;
+            opacity: 0.7;
+            margin-bottom: 20px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 25px;
+        }
+
+        .stat-card {
+            background: rgba(138, 43, 226, 0.1);
+            border: 1px solid rgba(138, 43, 226, 0.2);
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #8A2BE2;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            opacity: 0.7;
+            margin-top: 5px;
+        }
+
+        .progress-bar-container {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            height: 12px;
+            overflow: hidden;
+            margin: 15px 0;
+        }
+
+        .progress-bar {
+            background: #8A2BE2;
+            height: 100%;
+            border-radius: 12px;
+            transition: width 0.5s;
+        }
+
+        .checkin-list {
+            margin-top: 20px;
+        }
+
+        .checkin-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 0.9rem;
+        }
+
+        .checkin-date {
+            opacity: 0.7;
+        }
+
+        .checkin-badge {
+            color: #00C853;
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <div class="glass">
+            <div class="header">
+                <button class="back-btn" onclick="window.location.href='index.html'">←</button>
+                <h1>📊 Progress</h1>
+                <div style="width: 40px;"></div>
+            </div>
+            <p class="subtitle" id="userGreeting">Your journey so far</p>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number" id="streakCount">0</div>
+                    <div class="stat-label">🔥 Streak (Days)</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="totalCompleted">0</div>
+                    <div class="stat-label">✅ Lessons Done</div>
+                </div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number" id="totalLessons">12</div>
+                    <div class="stat-label">📚 Total Lessons</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="percentage">0%</div>
+                    <div class="stat-label">🎯 Completion</div>
+                </div>
+            </div>
+
+            <div class="progress-bar-container">
+                <div class="progress-bar" id="progressBar" style="width: 0%;"></div>
+            </div>
+
+            <h3 style="margin-top: 25px; margin-bottom: 15px;">Recent Check-ins</h3>
+            <div id="checkinList" class="checkin-list">
+                <p style="text-align: center; opacity: 0.6;">Loading check-ins...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://qnxbhrzpaimpwgheiibu.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFueGJocnpwYWltcHdnaGVpaWJ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgxMjAxMzgsImV4cCI6MjEwMzY5NjEzOH0.2kcocQ0VD3OZpdkDn4tXL7uF0vyrqpqKIOe5mGtXcDE';
+
+        async function loadProgress() {
+            if (!localStorage.getItem('deen_token')) {
+                window.location.href = 'index.html';
+                return;
+            }
+
+            const userName = localStorage.getItem('deen_user');
+            document.getElementById('userGreeting').textContent = `${userName}'s journey so far`;
+
+            try {
+                const userId = await getUserId();
+
+                // Get progress
+                const progressRes = await fetch(`${SUPABASE_URL}/rest/v1/progress?user_id=eq.${userId}&completed=eq.true`, {
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    }
+                });
+                const progress = await progressRes.json();
+                const completedCount = progress.length;
+                const totalLessons = 12;
+                const percentage = Math.round((completedCount / totalLessons) * 100);
+
+                document.getElementById('totalCompleted').textContent = completedCount;
+                document.getElementById('percentage').textContent = percentage + '%';
+                document.getElementById('progressBar').style.width = percentage + '%';
+
+                // Get checkins
+                const checkinsRes = await fetch(
+                    `${SUPABASE_URL}/rest/v1/checkins?user_id=eq.${userId}&order=check_in_date.desc&limit=10`,
+                    {
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                        }
+                    }
+                );
+                const checkins = await checkinsRes.json();
+
+                // Calculate streak
+                const streak = calculateStreak(checkins);
+                document.getElementById('streakCount').textContent = streak;
+
+                // Display checkins
+                const checkinList = document.getElementById('checkinList');
+                checkinList.innerHTML = '';
+
+                if (checkins.length === 0) {
+                    checkinList.innerHTML = '<p style="text-align: center; opacity: 0.6;">No check-ins yet. Start your first lesson!</p>';
+                } else {
+                    checkins.forEach(checkin => {
+                        const item = document.createElement('div');
+                        item.className = 'checkin-item';
+                        item.innerHTML = `
+                            <span>${checkin.check_in_date}</span>
+                            <span class="checkin-badge">✅</span>
+                        `;
+                        checkinList.appendChild(item);
+                    });
+                }
+
+            } catch (error) {
+                console.error('Error loading progress:', error);
+            }
+        }
+
+        async function getUserId() {
+            const role = localStorage.getItem('deen_role');
+            const res = await fetch(`${SUPABASE_URL}/rest/v1/users?role=eq.${role}&select=id`, {
+                headers: {
+                    'apikey': SUPABASE_ANON_KEY,
+                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                }
+            });
+            const users = await res.json();
+            return users[0]?.id || 1;
+        }
+
+        function calculateStreak(checkins) {
+            if (!checkins || checkins.length === 0) return 0;
+            
+            let streak = 0;
+            let currentDate = new Date();
+            
+            for (let i = 0; i < checkins.length; i++) {
+                const checkinDate = new Date(checkins[i].check_in_date);
+                const diffDays = Math.floor((currentDate - checkinDate) / (1000 * 60 * 60 * 24));
+                
+                if (diffDays === streak) {
+                    streak++;
+                } else {
+                    break;
+                }
+            }
+            
+            return streak;
+        }
+
+        loadProgress();
+    </script>
+</body>
+</html>
