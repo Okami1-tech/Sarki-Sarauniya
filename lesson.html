@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson — Deen Together</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="love.png" type="image/png">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: #050505;
+            color: #ffffff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .app {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .glass {
+            background: rgba(138, 43, 226, 0.08);
+            border: 1px solid rgba(138, 43, 226, 0.25);
+            border-radius: 24px;
+            padding: 25px;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            margin-bottom: 20px;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .back-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: #ffffff;
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: all 0.3s;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .lesson-label {
+            font-size: 0.8rem;
+            color: #8A2BE2;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            color: #8A2BE2;
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .lesson-content {
+            line-height: 1.8;
+            font-size: 0.95rem;
+            opacity: 0.9;
+        }
+
+        .lesson-content h3 {
+            color: #8A2BE2;
+            margin: 20px 0 10px;
+            font-size: 1.1rem;
+        }
+
+        .lesson-content p {
+            margin-bottom: 15px;
+        }
+
+        .lesson-content ul {
+            margin: 10px 0 15px 20px;
+        }
+
+        .lesson-content li {
+            margin-bottom: 8px;
+        }
+
+        .lesson-content blockquote {
+            border-left: 3px solid #8A2BE2;
+            padding-left: 15px;
+            margin: 15px 0;
+            opacity: 0.8;
+            font-style: italic;
+        }
+
+        .btn {
+            background: #8A2BE2;
+            color: #ffffff;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 14px;
+            font-size: 1rem;
+            cursor: pointer;
+            width: 100%;
+            font-weight: 600;
+            transition: all 0.3s;
+            margin-top: 20px;
+        }
+
+        .btn:hover {
+            background: #7B1FA2;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(138, 43, 226, 0.3);
+        }
+
+        .btn-completed {
+            background: #00C853;
+            cursor: default;
+        }
+
+        .btn-completed:hover {
+            background: #00C853;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .nav-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: #ffffff;
+            padding: 12px;
+            border-radius: 12px;
+            cursor: pointer;
+            flex: 1;
+            transition: all 0.3s;
+        }
+
+        .nav-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <div class="glass">
+            <div class="header">
+                <button class="back-btn" onclick="window.location.href='lessons.html'">←</button>
+                <p class="lesson-label" id="lessonLabel">PART 1 — LESSON 1</p>
+                <div style="width: 40px;"></div>
+            </div>
+            <h1 id="lessonTitle">Loading...</h1>
+            <div class="lesson-content" id="lessonContent">
+                <p style="text-align: center; opacity: 0.6;">Loading lesson content...</p>
+            </div>
+            <button class="btn" id="completeBtn" onclick="markComplete()">✅ Mark as Complete</button>
+            <div class="nav-buttons">
+                <button class="nav-btn" id="prevBtn" onclick="navigateLesson(-1)">← Previous</button>
+                <button class="nav-btn" id="nextBtn" onclick="navigateLesson(1)">Next →</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://qnxbhrzpaimpwgheiibu.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFueGJocnpwYWltcHdnaGVpaWJ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgxMjAxMzgsImV4cCI6MjEwMzY5NjEzOH0.2kcocQ0VD3OZpdkDn4tXL7uF0vyrqpqKIOe5mGtXcDE';
+
+        let currentLessonId = null;
+        let allLessons = [];
+        let currentIndex = -1;
+        let isCompleted = false;
+
+        async function loadLesson() {
+            if (!localStorage.getItem('deen_token')) {
+                window.location.href = 'index.html';
+                return;
+            }
+
+            const urlParams = new URLSearchParams(window.location.search);
+            currentLessonId = urlParams.get('id');
+
+            try {
+                // Load all lessons for navigation
+                const lessonsRes = await fetch(`${SUPABASE_URL}/rest/v1/lessons?order=lesson_number.asc`, {
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    }
+                });
+                allLessons = await lessonsRes.json();
+                currentIndex = allLessons.findIndex(l => l.id == currentLessonId);
+
+                // Load current lesson
+                const lessonRes = await fetch(`${SUPABASE_URL}/rest/v1/lessons?id=eq.${currentLessonId}`, {
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    }
+                });
+                const lesson = (await lessonRes.json())[0];
+
+                document.getElementById('lessonLabel').textContent = 
+                    `PART ${lesson.part_number} — LESSON ${lesson.lesson_number}`;
+                document.getElementById('lessonTitle').textContent = lesson.title;
+                document.getElementById('lessonContent').innerHTML = lesson.content;
+
+                // Check if completed
+                const userId = await getUserId();
+                const progressRes = await fetch(
+                    `${SUPABASE_URL}/rest/v1/progress?user_id=eq.${userId}&lesson_id=eq.${currentLessonId}&completed=eq.true`,
+                    {
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                        }
+                    }
+                );
+                const progress = await progressRes.json();
+                isCompleted = progress.length > 0;
+
+                const completeBtn = document.getElementById('completeBtn');
+                if (isCompleted) {
+                    completeBtn.textContent = '✅ Completed';
+                    completeBtn.classList.add('btn-completed');
+                    completeBtn.disabled = true;
+                }
+
+                // Navigation buttons
+                document.getElementById('prevBtn').style.display = currentIndex > 0 ? 'block' : 'none';
+                document.getElementById('nextBtn').style.display = 
+                    currentIndex < allLessons.length - 1 ? 'block' : 'none';
+
+            } catch (error) {
+                console.error('Error loading lesson:', error);
+                document.getElementById('lessonContent').innerHTML = 
+                    '<p style="text-align: center; color: #ff4444;">Error loading lesson. Check console.</p>';
+            }
+        }
+
+        async function markComplete() {
+            if (isCompleted) return;
+
+            const userId = await getUserId();
+            const today = new Date().toISOString().split('T')[0];
+
+            try {
+                // Insert progress
+                await fetch(`${SUPABASE_URL}/rest/v1/progress`, {
+                    method: 'POST',
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        user_id: userId,
+                        lesson_id: parseInt(currentLessonId),
+                        completed: true,
+                        completed_at: new Date().toISOString()
+                    })
+                });
+
+                // Insert checkin
+                await fetch(`${SUPABASE_URL}/rest/v1/checkins`, {
+                    method: 'POST',
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        user_id: userId,
+                        lesson_id: parseInt(currentLessonId),
+                        check_in_date: today,
+                        completed: true
+                    })
+                });
+
+                const completeBtn = document.getElementById('completeBtn');
+                completeBtn.textContent = '✅ Completed';
+                completeBtn.classList.add('btn-completed');
+                completeBtn.disabled = true;
+                isCompleted = true;
+
+            } catch (error) {
+                console.error('Error marking complete:', error);
+                alert('Error saving progress. Please try again.');
+            }
+        }
+
+        async function getUserId() {
+            const role = localStorage.getItem('deen_role');
+            const res = await fetch(`${SUPABASE_URL}/rest/v1/users?role=eq.${role}&select=id`, {
+                headers: {
+                    'apikey': SUPABASE_ANON_KEY,
+                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                }
+            });
+            const users = await res.json();
+            return users[0]?.id || 1;
+        }
+
+        function navigateLesson(direction) {
+            const newIndex = currentIndex + direction;
+            if (newIndex >= 0 && newIndex < allLessons.length) {
+                window.location.href = `lesson.html?id=${allLessons[newIndex].id}`;
+            }
+        }
+
+        loadLesson();
+    </script>
+</body>
+</html>
