@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All Lessons — Deen Together</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="love.png" type="image/png">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: #050505;
+            color: #ffffff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .app {
+            max-width: 480px;
+            margin: 0 auto;
+        }
+
+        .glass {
+            background: rgba(138, 43, 226, 0.08);
+            border: 1px solid rgba(138, 43, 226, 0.25);
+            border-radius: 24px;
+            padding: 25px;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            margin-bottom: 20px;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .back-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: #ffffff;
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: all 0.3s;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        h1 {
+            font-size: 1.4rem;
+            color: #8A2BE2;
+            text-align: center;
+        }
+
+        .subtitle {
+            text-align: center;
+            font-size: 0.85rem;
+            opacity: 0.7;
+            margin-bottom: 20px;
+        }
+
+        .lesson-card {
+            background: rgba(138, 43, 226, 0.08);
+            border: 1px solid rgba(138, 43, 226, 0.2);
+            border-radius: 16px;
+            padding: 18px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .lesson-card:hover {
+            background: rgba(138, 43, 226, 0.15);
+            transform: translateX(5px);
+        }
+
+        .lesson-card.completed {
+            border-color: #00C853;
+            background: rgba(0, 200, 83, 0.08);
+        }
+
+        .lesson-info {
+            flex: 1;
+        }
+
+        .lesson-number {
+            font-size: 0.75rem;
+            color: #8A2BE2;
+            margin-bottom: 5px;
+        }
+
+        .lesson-title {
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+        .completed-badge {
+            color: #00C853;
+            font-size: 1.2rem;
+        }
+
+        .part-header {
+            text-align: center;
+            margin: 25px 0 15px;
+            font-size: 1.1rem;
+            color: #8A2BE2;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <div class="glass">
+            <div class="header">
+                <button class="back-btn" onclick="window.location.href='index.html'">←</button>
+                <h1>📚 All Lessons</h1>
+                <div style="width: 40px;"></div>
+            </div>
+            <p class="subtitle">Part 1 — The Foundation of Islam</p>
+            <div id="lessonsList">
+                <p style="text-align: center; opacity: 0.6;">Loading lessons...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://qnxbhrzpaimpwgheiibu.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFueGJocnpwYWltcHdnaGVpaWJ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgxMjAxMzgsImV4cCI6MjEwMzY5NjEzOH0.2kcocQ0VD3OZpdkDn4tXL7uF0vyrqpqKIOe5mGtXcDE';
+
+        async function loadLessons() {
+            if (!localStorage.getItem('deen_token')) {
+                window.location.href = 'index.html';
+                return;
+            }
+
+            try {
+                const lessonsRes = await fetch(`${SUPABASE_URL}/rest/v1/lessons?order=lesson_number.asc`, {
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    }
+                });
+                const lessons = await lessonsRes.json();
+
+                const userId = await getUserId();
+                const progressRes = await fetch(`${SUPABASE_URL}/rest/v1/progress?user_id=eq.${userId}&completed=eq.true`, {
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    }
+                });
+                const progress = await progressRes.json();
+                const completedIds = progress.map(p => p.lesson_id);
+
+                const lessonsList = document.getElementById('lessonsList');
+                lessonsList.innerHTML = '';
+
+                lessons.forEach(lesson => {
+                    const isCompleted = completedIds.includes(lesson.id);
+                    const card = document.createElement('div');
+                    card.className = `lesson-card ${isCompleted ? 'completed' : ''}`;
+                    card.onclick = () => window.location.href = `lesson.html?id=${lesson.id}`;
+                    
+                    card.innerHTML = `
+                        <div class="lesson-info">
+                            <p class="lesson-number">LESSON ${lesson.lesson_number}</p>
+                            <p class="lesson-title">${lesson.title}</p>
+                        </div>
+                        ${isCompleted ? '<span class="completed-badge">✅</span>' : ''}
+                    `;
+                    
+                    lessonsList.appendChild(card);
+                });
+
+            } catch (error) {
+                console.error('Error loading lessons:', error);
+                document.getElementById('lessonsList').innerHTML = 
+                    '<p style="text-align: center; color: #ff4444;">Error loading lessons. Check console.</p>';
+            }
+        }
+
+        async function getUserId() {
+            const role = localStorage.getItem('deen_role');
+            const res = await fetch(`${SUPABASE_URL}/rest/v1/users?role=eq.${role}&select=id`, {
+                headers: {
+                    'apikey': SUPABASE_ANON_KEY,
+                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                }
+            });
+            const users = await res.json();
+            return users[0]?.id || 1;
+        }
+
+        loadLessons();
+    </script>
+</body>
+</html>
