@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deen Together — Sarki & Sarauniya</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="love.png" type="image/png">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: #050505;
+            color: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .app {
+            width: 100%;
+            max-width: 420px;
+        }
+
+        .glass {
+            background: rgba(138, 43, 226, 0.08);
+            border: 1px solid rgba(138, 43, 226, 0.25);
+            border-radius: 24px;
+            padding: 30px 25px;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            margin-bottom: 20px;
+        }
+
+        .logo-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .logo {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #8A2BE2;
+            box-shadow: 0 0 30px rgba(138, 43, 226, 0.4);
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            text-align: center;
+            margin-bottom: 5px;
+            color: #8A2BE2;
+        }
+
+        .subtitle {
+            text-align: center;
+            font-size: 0.9rem;
+            opacity: 0.7;
+            margin-bottom: 25px;
+        }
+
+        .greeting {
+            font-size: 1.3rem;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .greeting span {
+            color: #8A2BE2;
+            font-weight: bold;
+        }
+
+        .date-display {
+            text-align: center;
+            font-size: 0.85rem;
+            opacity: 0.6;
+            margin-bottom: 25px;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 15px 20px;
+            border-radius: 14px;
+            border: 1px solid rgba(138, 43, 226, 0.4);
+            background: rgba(255, 255, 255, 0.05);
+            color: #ffffff;
+            font-size: 1rem;
+            margin-bottom: 15px;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        .input-field:focus {
+            border-color: #8A2BE2;
+            box-shadow: 0 0 15px rgba(138, 43, 226, 0.3);
+        }
+
+        .input-field::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .btn {
+            background: #8A2BE2;
+            color: #ffffff;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 14px;
+            font-size: 1rem;
+            cursor: pointer;
+            width: 100%;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .btn:hover {
+            background: #7B1FA2;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(138, 43, 226, 0.3);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            margin-top: 10px;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .stat-card {
+            background: rgba(138, 43, 226, 0.1);
+            border: 1px solid rgba(138, 43, 226, 0.2);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #8A2BE2;
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            opacity: 0.7;
+            margin-top: 5px;
+        }
+
+        .nav-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 15px;
+        }
+
+        .nav-btn {
+            background: rgba(138, 43, 226, 0.1);
+            border: 1px solid rgba(138, 43, 226, 0.25);
+            border-radius: 14px;
+            padding: 18px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: #ffffff;
+            font-size: 0.9rem;
+        }
+
+        .nav-btn:hover {
+            background: rgba(138, 43, 226, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .nav-btn .icon {
+            font-size: 1.8rem;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .today-lesson {
+            background: rgba(138, 43, 226, 0.15);
+            border: 1px solid #8A2BE2;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .today-lesson h3 {
+            color: #8A2BE2;
+            margin-bottom: 10px;
+            font-size: 1rem;
+        }
+
+        .today-lesson p {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-bottom: 15px;
+        }
+
+        .error-msg {
+            color: #ff4444;
+            text-align: center;
+            font-size: 0.85rem;
+            margin-top: 10px;
+            display: none;
+        }
+
+        @media (max-width: 480px) {
+            .glass {
+                padding: 20px 15px;
+            }
+            .logo {
+                width: 60px;
+                height: 60px;
+            }
+            h1 {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <!-- LOGIN SECTION -->
+        <div class="glass" id="loginSection">
+            <div class="logo-container">
+                <img src="love.png" alt="Deen Together" class="logo">
+            </div>
+            <h1>🌙 Deen Together</h1>
+            <p class="subtitle">Sarki & Sarauniya — Private Islamic Study</p>
+            <input type="password" id="tokenInput" class="input-field" placeholder="Enter your token...">
+            <button class="btn" onclick="login()">Enter</button>
+            <p class="error-msg" id="errorMsg">Invalid token. Try again.</p>
+        </div>
+
+        <!-- DASHBOARD SECTION -->
+        <div class="glass hidden" id="dashboardSection">
+            <div class="logo-container">
+                <img src="love.png" alt="Deen Together" class="logo" style="width: 50px; height: 50px;">
+            </div>
+            <p class="greeting">As-salamu alaykum, <span id="userName"></span> 💜</p>
+            <p class="date-display" id="dateDisplay"></p>
+
+            <div class="today-lesson">
+                <h3>📖 Today's Lesson</h3>
+                <p id="todayLessonTitle">Loading...</p>
+                <button class="btn" onclick="startTodayLesson()">Start Lesson</button>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-number" id="streakCount">0</div>
+                <div class="stat-label">🔥 Day Streak</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-number" id="completedCount">0</div>
+                <div class="stat-label">✅ Lessons Completed</div>
+            </div>
+
+            <div class="nav-grid">
+                <button class="nav-btn" onclick="window.location.href='lessons.html'">
+                    <span class="icon">📚</span>
+                    All Lessons
+                </button>
+                <button class="nav-btn" onclick="window.location.href='progress.html'">
+                    <span class="icon">📊</span>
+                    Progress
+                </button>
+            </div>
+
+            <button class="btn btn-secondary" onclick="logout()">Logout</button>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://qnxbhrzpaimpwgheiibu.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFueGJocnpwYWltcHdnaGVpaWJ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgxMjAxMzgsImV4cCI6MjEwMzY5NjEzOH0.2kcocQ0VD3OZpdkDn4tXL7uF0vyrqpqKIOe5mGtXcDE';
+
+        function login() {
+            const token = document.getElementById('tokenInput').value.trim();
+            const errorMsg = document.getElementById('errorMsg');
+            
+            if (token === 'SARKI-2026') {
+                localStorage.setItem('deen_user', 'Sarki');
+                localStorage.setItem('deen_token', token);
+                localStorage.setItem('deen_role', 'sarki');
+                showDashboard();
+            } else if (token === 'SARAUNIYA-2026') {
+                localStorage.setItem('deen_user', 'Sarauniya');
+                localStorage.setItem('deen_token', token);
+                localStorage.setItem('deen_role', 'sarauniya');
+                showDashboard();
+            } else {
+                errorMsg.style.display = 'block';
+                setTimeout(() => {
+                    errorMsg.style.display = 'none';
+                }, 3000);
+            }
+        }
+
+        function showDashboard() {
+            document.getElementById('loginSection').classList.add('hidden');
+            document.getElementById('dashboardSection').classList.remove('hidden');
+            document.getElementById('userName').textContent = localStorage.getItem('deen_user');
+            
+            const now = new Date();
+            document.getElementById('dateDisplay').textContent = now.toLocaleDateString('en-NG', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+            
+            loadDashboardData();
+        }
+
+        async function loadDashboardData() {
+            const user = localStorage.getItem('deen_user');
+            const today = new Date().toISOString().split('T')[0];
+            
+            try {
+                // Get today's lesson (first incomplete lesson)
+                const lessonsRes = await fetch(`${SUPABASE_URL}/rest/v1/lessons?select=*&order=lesson_number.asc`, {
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    }
+                });
+                const lessons = await lessonsRes.json();
+                
+                if (lessons && lessons.length > 0) {
+                    document.getElementById('todayLessonTitle').textContent = 
+                        `Part ${lessons[0].part_number} — Lesson ${lessons[0].lesson_number}: ${lessons[0].title}`;
+                    
+                    localStorage.setItem('today_lesson_id', lessons[0].id);
+                }
+                
+                // Get completed count
+                const userId = await getUserId();
+                const progressRes = await fetch(`${SUPABASE_URL}/rest/v1/progress?user_id=eq.${userId}&completed=eq.true`, {
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    }
+                });
+                const progress = await progressRes.json();
+                document.getElementById('completedCount').textContent = progress.length || 0;
+                
+                // Get streak
+                const checkinsRes = await fetch(`${SUPABASE_URL}/rest/v1/checkins?user_id=eq.${userId}&select=check_in_date&order=check_in_date.desc`, {
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    }
+                });
+                const checkins = await checkinsRes.json();
+                document.getElementById('streakCount').textContent = calculateStreak(checkins);
+                
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+            }
+        }
+
+        async function getUserId() {
+            const role = localStorage.getItem('deen_role');
+            const res = await fetch(`${SUPABASE_URL}/rest/v1/users?role=eq.${role}&select=id`, {
+                headers: {
+                    'apikey': SUPABASE_ANON_KEY,
+                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                }
+            });
+            const users = await res.json();
+            return users[0]?.id || 1;
+        }
+
+        function calculateStreak(checkins) {
+            if (!checkins || checkins.length === 0) return 0;
+            
+            let streak = 0;
+            let currentDate = new Date();
+            
+            for (let i = 0; i < checkins.length; i++) {
+                const checkinDate = new Date(checkins[i].check_in_date);
+                const diffDays = Math.floor((currentDate - checkinDate) / (1000 * 60 * 60 * 24));
+                
+                if (diffDays === streak) {
+                    streak++;
+                } else {
+                    break;
+                }
+            }
+            
+            return streak;
+        }
+
+        function startTodayLesson() {
+            const lessonId = localStorage.getItem('today_lesson_id');
+            if (lessonId) {
+                window.location.href = `lesson.html?id=${lessonId}`;
+            } else {
+                window.location.href = 'lessons.html';
+            }
+        }
+
+        function logout() {
+            localStorage.clear();
+            location.reload();
+        }
+
+        // Auto-login
+        if (localStorage.getItem('deen_token')) {
+            showDashboard();
+        }
+    </script>
+</body>
+</html>
