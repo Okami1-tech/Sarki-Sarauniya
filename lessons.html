@@ -121,6 +121,10 @@
             font-size: 1.1rem;
             color: #8A2BE2;
             font-weight: bold;
+            padding: 12px;
+            background: rgba(138, 43, 226, 0.15);
+            border-radius: 12px;
+            border: 1px solid rgba(138, 43, 226, 0.3);
         }
     </style>
 </head>
@@ -132,7 +136,7 @@
                 <h1>📚 All Lessons</h1>
                 <div style="width: 40px;"></div>
             </div>
-            <p class="subtitle">Part 1 — The Foundation of Islam</p>
+            <p class="subtitle">Your complete Islamic study journey</p>
             <div id="lessonsList">
                 <p style="text-align: center; opacity: 0.6;">Loading lessons...</p>
             </div>
@@ -150,47 +154,78 @@
             }
 
             try {
-                const lessonsRes = await fetch(`${SUPABASE_URL}/rest/v1/lessons?order=lesson_number.asc`, {
-                    headers: {
-                        'apikey': SUPABASE_ANON_KEY,
-                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                // FIXED: Sort by part_number first, then lesson_number
+                const lessonsRes = await fetch(
+                    `${SUPABASE_URL}/rest/v1/lessons?order=part_number.asc,lesson_number.asc`,
+                    {
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                        }
                     }
-                });
+                );
                 const lessons = await lessonsRes.json();
 
                 const userId = await getUserId();
-                const progressRes = await fetch(`${SUPABASE_URL}/rest/v1/progress?user_id=eq.${userId}&completed=eq.true`, {
-                    headers: {
-                        'apikey': SUPABASE_ANON_KEY,
-                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                const progressRes = await fetch(
+                    `${SUPABASE_URL}/rest/v1/progress?user_id=eq.${userId}&completed=eq.true`,
+                    {
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                        }
                     }
-                });
+                );
                 const progress = await progressRes.json();
                 const completedIds = progress.map(p => p.lesson_id);
 
                 const lessonsList = document.getElementById('lessonsList');
                 lessonsList.innerHTML = '';
 
+                // Group by part and display with headers
+                let currentPart = 0;
+                let lessonNumberWithinPart = 0;
+
                 lessons.forEach(lesson => {
+                    // If this is a new part, add part header and reset lesson counter
+                    if (lesson.part_number !== currentPart) {
+                        currentPart = lesson.part_number;
+                        lessonNumberWithinPart = 0;
+
+                        const partNames = {
+                            1: 'Part 1 — The Foundation of Islam',
+                            2: 'Part 2 — Knowing Allah',
+                            3: 'Part 3 — Knowing Prophet Muhammad ﷺ'
+                        };
+
+                        const partHeader = document.createElement('div');
+                        partHeader.className = 'part-header';
+                        partHeader.textContent = partNames[currentPart] || `Part ${currentPart}`;
+                        lessonsList.appendChild(partHeader);
+                    }
+
+                    // Increment lesson number within this part
+                    lessonNumberWithinPart++;
+
                     const isCompleted = completedIds.includes(lesson.id);
                     const card = document.createElement('div');
                     card.className = `lesson-card ${isCompleted ? 'completed' : ''}`;
                     card.onclick = () => window.location.href = `lesson.html?id=${lesson.id}`;
-                    
+
                     card.innerHTML = `
                         <div class="lesson-info">
-                            <p class="lesson-number">LESSON ${lesson.lesson_number}</p>
+                            <p class="lesson-number">PART ${lesson.part_number} — LESSON ${lessonNumberWithinPart}</p>
                             <p class="lesson-title">${lesson.title}</p>
                         </div>
                         ${isCompleted ? '<span class="completed-badge">✅</span>' : ''}
                     `;
-                    
+
                     lessonsList.appendChild(card);
                 });
 
             } catch (error) {
                 console.error('Error loading lessons:', error);
-                document.getElementById('lessonsList').innerHTML = 
+                document.getElementById('lessonsList').innerHTML =
                     '<p style="text-align: center; color: #ff4444;">Error loading lessons. Check console.</p>';
             }
         }
