@@ -197,13 +197,16 @@
             currentLessonId = urlParams.get('id');
 
             try {
-                // Load all lessons for navigation
-                const lessonsRes = await fetch(`${SUPABASE_URL}/rest/v1/lessons?order=lesson_number.asc`, {
-                    headers: {
-                        'apikey': SUPABASE_ANON_KEY,
-                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                // FIXED: Sort by part_number first, then lesson_number
+                const lessonsRes = await fetch(
+                    `${SUPABASE_URL}/rest/v1/lessons?order=part_number.asc,lesson_number.asc`,
+                    {
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                        }
                     }
-                });
+                );
                 allLessons = await lessonsRes.json();
                 currentIndex = allLessons.findIndex(l => l.id == currentLessonId);
 
@@ -216,8 +219,12 @@
                 });
                 const lesson = (await lessonRes.json())[0];
 
-                document.getElementById('lessonLabel').textContent = 
-                    `PART ${lesson.part_number} — LESSON ${lesson.lesson_number}`;
+                // FIXED: Calculate lesson number within its part
+                const partLessons = allLessons.filter(l => l.part_number === lesson.part_number);
+                const lessonNumberWithinPart = partLessons.findIndex(l => l.id == currentLessonId) + 1;
+
+                document.getElementById('lessonLabel').textContent =
+                    `PART ${lesson.part_number} — LESSON ${lessonNumberWithinPart}`;
                 document.getElementById('lessonTitle').textContent = lesson.title;
                 document.getElementById('lessonContent').innerHTML = lesson.content;
 
@@ -244,12 +251,12 @@
 
                 // Navigation buttons
                 document.getElementById('prevBtn').style.display = currentIndex > 0 ? 'block' : 'none';
-                document.getElementById('nextBtn').style.display = 
+                document.getElementById('nextBtn').style.display =
                     currentIndex < allLessons.length - 1 ? 'block' : 'none';
 
             } catch (error) {
                 console.error('Error loading lesson:', error);
-                document.getElementById('lessonContent').innerHTML = 
+                document.getElementById('lessonContent').innerHTML =
                     '<p style="text-align: center; color: #ff4444;">Error loading lesson. Check console.</p>';
             }
         }
